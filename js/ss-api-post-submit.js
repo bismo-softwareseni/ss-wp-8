@@ -1,4 +1,5 @@
 jQuery( document ).ready( function ( $ ) {
+    //-- insert post
     $( '.ss-api-form-submit-post' ).on( 'submit', function( e ) {
         e.preventDefault();
 
@@ -26,9 +27,34 @@ jQuery( document ).ready( function ( $ ) {
             fail : function( response ) {
                 alert( ss_api_post_submit_action.failure );
             }
- 
         } );
- 
     });
+
+    //-- delete post
+    $( '.api-delete-post' ).on( 'click', function( e ) {
+        e.preventDefault();
+
+        var ss_post_id = $( this ).data( 'post-id' );
+
+        var ss_post_data = {
+            id: ss_post_id
+        };
  
+        $.ajax( {
+            method: "DELETE",
+            url: ss_api_post_submit_action.root + 'wp/v2/posts/' + ss_post_id,
+            data: ss_post_data,
+            beforeSend: function ( xhr ) {
+                xhr.setRequestHeader( 'X-WP-Nonce', ss_api_post_submit_action.nonce );
+            },
+            success : function( response ) {
+                alert( ss_api_post_submit_action.success );
+            },
+            fail : function( response ) {
+                alert( ss_api_post_submit_action.failure );
+            }
+        } );
+    } );
+
+    //-- post
 } );

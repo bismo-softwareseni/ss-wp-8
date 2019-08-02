@@ -46,7 +46,20 @@ class SS_WP_8_Main {
 		);
 
 		// -- show latest posts
-		$ss_posts_response = wp_remote_get( get_site_url() . '/wp-json/wp/v2/posts?per_page=' . $ss_shortcode_atts ['max_posts'] );
+		$this->ss_wp8_get_posts( $ss_shortcode_atts ['max_posts'], false );
+
+		return ob_get_clean();
+	}
+	// -- end function display latest post
+
+	/**
+	 * Function to display a post using WP API
+	 *
+	 * @param int     $ss_max_post Post amount per page.
+	 * @param boolean $ss_show_up_del Show update and delete link.
+	 */
+	public function ss_wp8_get_posts( $ss_max_post, $ss_show_up_del ) {
+		$ss_posts_response = wp_remote_get( get_site_url() . '/wp-json/wp/v2/posts?per_page=' . $ss_max_post );
 
 		// -- exit if request error
 		if ( is_wp_error( $ss_posts_response ) ) {
@@ -59,23 +72,34 @@ class SS_WP_8_Main {
 				foreach ( $ss_posts_result as $ss_post ) {
 					?>
 
-			<h5>
+			<h5 class="post-<?php echo esc_attr( $ss_post->id ); ?>">
 				<a href="<?php echo esc_url( get_permalink( $ss_post->id ) ); ?>">
 					<?php echo esc_html( $ss_post->title->rendered ); ?>
 				</a>
+
+				<!-- if show update and delete -->
+					<?php
+					if ( $ss_show_up_del && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+						?>
+
+					<div>
+						<a href="#" class="api-delete-post" data-post-id="<?php echo esc_attr( $ss_post->id ); ?>" style="color: #262626;">delete</a>
+						<a href="#" class="api-update-post" data-post-id="<?php echo esc_attr( $ss_post->id ); ?>" style="color: #262626;">update</a>
+					</div>
+
+						<?php
+					}
+					?>
 			</h5>
 
 					<?php
 				}
 			}
 		}
-
-		return ob_get_clean();
 	}
-	// -- end function display latest post
 
 	/**
-	 * Function to submit a post using WP API
+	 * Function to submit a post using WP API ( create shortcode )
 	 */
 	public function ss_wp8_crt_shd_submit_post() {
 		ob_start();
@@ -110,20 +134,38 @@ class SS_WP_8_Main {
 	}
 
 	/**
+	 * Function to update or delete a post using WP API ( create shortcode )
+	 */
+	public function ss_wp8_crt_shd_del_up_post() {
+		ob_start();
+		?>
+
+		<div class="post-container">
+			<?php
+				$this->ss_wp8_get_posts( 20, true );
+			?>
+		</div>
+
+		<?php
+		return ob_get_clean();
+	}
+
+
+	/**
 	 * Function for importing js script, required for submitting, deleting, and updating posts
 	 */
 	public function ss_wp8_enqueue_js() {
-		// -- js file to submit the post
+		// -- js file to submit the post ( insert, update, and delete )
 		wp_enqueue_script( 'ss-api-post-submit', plugin_dir_url( __FILE__ ) . '/js/ss-api-post-submit.js', array( 'jquery' ), 'v1.0', true );
 
-		// -- localize the script for ajax call
+		// -- localize the script for ajax call ( insert )
 		wp_localize_script(
 			'ss-api-post-submit',
 			'ss_api_post_submit_action',
 			array(
 				'root'            => esc_url_raw( rest_url() ),
 				'nonce'           => wp_create_nonce( 'wp_rest' ),
-				'success'         => __( 'Post submitted successfully', 'ss-wp8' ),
+				'success'         => __( 'Data processed successfully', 'ss-wp8' ),
 				'failure'         => __( 'Error.', 'ss-wp8' ),
 				'current_user_id' => get_current_user_id(),
 			)
@@ -139,6 +181,9 @@ class SS_WP_8_Main {
 
 		// -- register wp 8 shortcode to submit a post
 		add_shortcode( 'wp8_api_submit_post', array( $this, 'ss_wp8_crt_shd_submit_post' ) );
+
+		// -- register wp 8 shortcode to edit or delete a post
+		add_shortcode( 'wp8_api_update_delete_post', array( $this, 'ss_wp8_crt_shd_del_up_post' ) );
 
 		// -- enqueue scripts
 		add_action( 'wp_enqueue_scripts', array( $this, 'ss_wp8_enqueue_js' ) );
