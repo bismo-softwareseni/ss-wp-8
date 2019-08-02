@@ -27,7 +27,7 @@ class SS_WP_8_Main {
 	}
 
 	/**
-	 * Function to create shortcode for manipulating WP API
+	 * Function to display latest posts from WP API
 	 *
 	 * @param int $ss_shortcode_atts max amount posts to show.
 	 */
@@ -72,6 +72,63 @@ class SS_WP_8_Main {
 
 		return ob_get_clean();
 	}
+	// -- end function display latest post
+
+	/**
+	 * Function to submit a post using WP API
+	 */
+	public function ss_wp8_crt_shd_submit_post() {
+		ob_start();
+
+		// -- only show the form to the user that has access and have been logged in
+		if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+			?>
+
+		<form class="ss-api-form-submit-post ui form">
+			<div class="field">
+				<label for="ss-input-post-title">Post Title</label>
+				<input required type="text" name="ss-input-post-title" id="ss-input-post-title" class="ss-input-text" value="" style="width:100%;" />
+			</div>
+
+			<div class="field">
+				<label for="ss-input-post-title">Post Excerpt</label>
+				<input required type="text" name="ss-input-post-excerpt" id="ss-input-post-excerpt" class="ss-input-text" value="" style="width:100%;" />
+			</div>
+
+			<div class="field">
+				<label for="ss-input-post-content">Post Excerpt</label>
+				<textarea required name="ss-input-post-content" id="ss-input-post-content" class="ss-input-textarea" style="width:100%;"></textarea>
+			</div>
+
+			<button type="submit" name="ss-post-submit" class="ss-button ui button" style="margin-top:10px;">Submit</button>
+		</form>
+
+			<?php
+		}
+
+		return ob_get_clean();
+	}
+
+	/**
+	 * Function for importing js script, required for submitting, deleting, and updating posts
+	 */
+	public function ss_wp8_enqueue_js() {
+		// -- js file to submit the post
+		wp_enqueue_script( 'ss-api-post-submit', plugin_dir_url( __FILE__ ) . '/js/ss-api-post-submit.js', array( 'jquery' ), 'v1.0', true );
+
+		// -- localize the script for ajax call
+		wp_localize_script(
+			'ss-api-post-submit',
+			'ss_api_post_submit_action',
+			array(
+				'root'            => esc_url_raw( rest_url() ),
+				'nonce'           => wp_create_nonce( 'wp_rest' ),
+				'success'         => __( 'Post submitted successfully', 'ss-wp8' ),
+				'failure'         => __( 'Error.', 'ss-wp8' ),
+				'current_user_id' => get_current_user_id(),
+			)
+		);
+	}
 
 	/**
 	 * Function for executing some task when plugins loaded
@@ -79,6 +136,12 @@ class SS_WP_8_Main {
 	public function ss_wp8_plugins_loaded_handlers() {
 		// -- register wp 8 shortcode to get latest posts
 		add_shortcode( 'wp8_api_latest_post', array( $this, 'ss_wp8_crt_shd_latest_post' ) );
+
+		// -- register wp 8 shortcode to submit a post
+		add_shortcode( 'wp8_api_submit_post', array( $this, 'ss_wp8_crt_shd_submit_post' ) );
+
+		// -- enqueue scripts
+		add_action( 'wp_enqueue_scripts', array( $this, 'ss_wp8_enqueue_js' ) );
 	}
 
 }
