@@ -46,7 +46,7 @@ class SS_WP_8_Main {
 		);
 
 		// -- show latest posts
-		$this->ss_wp8_get_posts( $ss_shortcode_atts ['max_posts'], false );
+		$this->ss_wp8_get_posts( $ss_wp_8_roles_atts ['max_posts'], false );
 
 		return ob_get_clean();
 	}
@@ -120,7 +120,7 @@ class SS_WP_8_Main {
 			</div>
 
 			<div class="field">
-				<label for="ss-input-post-content">Post Excerpt</label>
+				<label for="ss-input-post-content">Post Content</label>
 				<textarea required name="ss-input-post-content" id="ss-input-post-content" class="ss-input-textarea" style="width:100%;"></textarea>
 			</div>
 
@@ -145,6 +145,37 @@ class SS_WP_8_Main {
 				$this->ss_wp8_get_posts( 20, true );
 			?>
 		</div>
+
+		<?php
+			// -- only show the form to the user that has access and have been logged in
+		if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+			?>
+
+
+		<form class="ss-api-form-update-post ui form" data-post-id="" style="display: none;">
+			<h4>Edit Post</h4>
+
+			<div class="field">
+				<label for="ss-input-post-title">Post Title</label>
+				<input required type="text" name="ss-input-post-title" id="ss-input-post-title" class="ss-input-text" value="" style="width:100%;" />
+			</div>
+
+			<div class="field">
+				<label for="ss-input-post-title">Post Excerpt</label>
+				<input required type="text" name="ss-input-post-excerpt" id="ss-input-post-excerpt" class="ss-input-text" value="" style="width:100%;" />
+			</div>
+
+			<div class="field">
+				<label for="ss-input-post-content">Post Content</label>
+				<textarea required name="ss-input-post-content" id="ss-input-post-content" class="ss-input-textarea" style="width:100%;"></textarea>
+			</div>
+
+			<button type="submit" name="ss-post-submit-update" class="ss-button ui button" style="margin-top:10px;">Submit</button>
+		</form>
+
+			<?php
+		}
+		?>
 
 		<?php
 		return ob_get_clean();
