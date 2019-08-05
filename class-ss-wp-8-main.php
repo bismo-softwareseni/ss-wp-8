@@ -65,36 +65,79 @@ class SS_WP_8_Main {
 		if ( is_wp_error( $ss_posts_response ) ) {
 			return;
 		} else {
-			// -- get the results
-			$ss_posts_result = json_decode( wp_remote_retrieve_body( $ss_posts_response ) );
+			?>
+
+		<!-- post results container -->
+		<div class="ajax-post-results-container">
+			<?php
+				// -- get the results
+				$ss_posts_result = json_decode( wp_remote_retrieve_body( $ss_posts_response ) );
 
 			if ( ! empty( $ss_posts_result ) ) {
 				foreach ( $ss_posts_result as $ss_post ) {
 					?>
 
-			<h5 class="post-<?php echo esc_attr( $ss_post->id ); ?>">
-				<a href="<?php echo esc_url( get_permalink( $ss_post->id ) ); ?>">
-					<?php echo esc_html( $ss_post->title->rendered ); ?>
-				</a>
+				<h5 class="post-<?php echo esc_attr( $ss_post->id ); ?>">
+					<a href="<?php echo esc_url( get_permalink( $ss_post->id ) ); ?>">
+						<?php echo esc_html( $ss_post->title->rendered ); ?>
+					</a>
 
-				<!-- if show update and delete -->
-					<?php
-					if ( $ss_show_up_del && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
-						?>
-
-					<div>
-						<a href="#" class="api-delete-post" data-post-id="<?php echo esc_attr( $ss_post->id ); ?>" style="color: #262626;">delete</a>
-						<a href="#" class="api-update-post" data-post-id="<?php echo esc_attr( $ss_post->id ); ?>" style="color: #262626;">update</a>
-					</div>
-
+					<!-- if show update and delete -->
 						<?php
-					}
-					?>
-			</h5>
+						if ( $ss_show_up_del && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+							?>
+
+						<div>
+							<a href="#" class="api-delete-post" data-post-id="<?php echo esc_attr( $ss_post->id ); ?>" style="color: #262626;">delete</a>
+							<a href="#" class="api-update-post" data-post-id="<?php echo esc_attr( $ss_post->id ); ?>" style="color: #262626;">update</a>
+						</div>
+
+							<?php
+						}
+						?>
+				</h5>
 
 					<?php
 				}
 			}
+			?>
+		</div>
+		<!-- end ajax post results container -->
+
+		<!-- pagination container -->
+		<div class="ajax-pagination-container">
+			<?php
+				// -- get max posts and max pages
+				$ss_max_page = $ss_posts_response['headers']['x-wp-totalpages'];
+
+				// -- set next page
+				$ss_next_page = 0;
+
+			if ( $ss_max_page > 1 ) {
+				$ss_next_page = 2;
+			} else {
+				$ss_next_page = 1;
+			}
+			?>
+
+			<div class="page-number">
+				<span class="current-page">1</span>
+				<span>of</span>
+				<span class="max-page"><?php echo esc_html( $ss_max_page ); ?></span>
+			</div>
+
+			<div class="ui large buttons" data-max-page="<?php echo esc_attr( $ss_max_page ); ?>" data-current-page="1" data-post-perpage="<?php echo esc_attr( $ss_max_post ); ?>">
+				<button class="ui button left labeled icon button-ajax-pagination prev-page" data-page="1">
+					<i class="left arrow icon"></i> Previous Page
+				</button>
+				<button class="ui button right labeled icon button-ajax-pagination next-page" data-page="<?php echo esc_attr( $ss_next_page ); ?>">
+					Next Page <i class="right arrow icon"></i>
+				</button>
+			</div>
+		</div>
+		<!-- end pagination container -->
+
+			<?php
 		}
 	}
 
@@ -189,10 +232,26 @@ class SS_WP_8_Main {
 		// -- js file to submit the post ( insert, update, and delete )
 		wp_enqueue_script( 'ss-api-post-submit', plugin_dir_url( __FILE__ ) . '/js/ss-api-post-submit.js', array( 'jquery' ), 'v1.0', true );
 
-		// -- localize the script for ajax call ( insert )
+		// -- localize the script for ajax call ( insert, update, delete )
 		wp_localize_script(
 			'ss-api-post-submit',
 			'ss_api_post_submit_action',
+			array(
+				'root'            => esc_url_raw( rest_url() ),
+				'nonce'           => wp_create_nonce( 'wp_rest' ),
+				'success'         => __( 'Data processed successfully', 'ss-wp8' ),
+				'failure'         => __( 'Error.', 'ss-wp8' ),
+				'current_user_id' => get_current_user_id(),
+			)
+		);
+
+		// -- js file to handle pagination
+		wp_enqueue_script( 'ss-api-post-pagination', plugin_dir_url( __FILE__ ) . '/js/ss-api-post-pagination.js', array( 'jquery' ), 'v1.0', true );
+
+		// -- localize the pagination script for ajax call
+		wp_localize_script(
+			'ss-api-post-pagination',
+			'ss_api_post_pagination',
 			array(
 				'root'            => esc_url_raw( rest_url() ),
 				'nonce'           => wp_create_nonce( 'wp_rest' ),
